@@ -44,12 +44,117 @@
 \maketitle
 
 \section{Exercise 1 - Scaling}
+\subsection{}
+\subsection{}
+\subsection{}
+\subsection{Bicubic Interpolation}
 
+Bicubic interpolation estimates a value at a 2D grid point using a $4\times4$ neighborhood (16 points) for smoother results. It extends 1D cubic splines separably: 
 
+\begin{enumerate}
+\item For each of 4 rows, compute 1D cubic interpolation across 4 columns using offset $t$:
+\[
+p_k = \sum_{m=0}^{3} c_m(t) \cdot f(i+m-1, j+k-1), \quad k=0\dots3
+\]
+(e.g., Catmull-Rom basis: $c_0(t) = -0.5t^3 + t^2 - 0.5t$, etc.)
 
+\item Interpolate the 4 $p_k$ vertically using offset $s$:
+\[
+p(x,y) = \sum_{k=0}^{3} c_k(s) \cdot p_k.
+\]
+\end{enumerate}
+
+This approximates a degree-3 surface, reducing blur/artifacts in tasks like image scaling.
+
+In bilinear interpolation, we uses $2\times2$ neighborhood (4 points) for linear weighting:
+\[
+p(x,y) = (1-t)(1-s)f(i,j) + t(1-s)f(i+1,j) + (1-t)sf(i,j+1) + ts f(i+1,j+1).
+\]
+Separable: horizontal linears, then vertical.
+
+The comparison between the complexity of two methods can be summarized as follows, we can see bicubic trades $\sim$4$\times$ computations for better detail preservation; bilinear prioritizes speed.
+
+\begin{tabular}{|p{2.5cm}|p{5cm}|p{5cm}|}
+\hline
+\textbf{Aspect} & \textbf{Bilinear} & \textbf{Bicubic} \\
+\hline
+\textbf{Pixels Used} & 4 (2$\times$2) & 16 (4$\times$4) \\
+\hline
+\textbf{Operations per Pixel} & $\sim$4 mult + $\sim$2 add & $\sim$20 mult + $\sim$15 add (4$\times$ cubic horiz + 1 vert) \\
+\hline
+\textbf{Speed} & Very fast ($O(1)$, real-time ok) & 4~5$\times$ slower ($O(1)$, but higher cost) \\
+\hline
+\textbf{Quality} & Basic, can blur & Sharper, smoother gradients \\
+\hline
+\end{tabular}
 
 \newpage
 \section{Exercise 2 - Distortion}
+\subsection{}
+\subsubsection*{1. Brown--Conrady Model of Radial Distortion}
+
+The Brown--Conrady model expresses the relation between the ideal (undistorted) image point 
+$(x, y)$ and the distorted image point $(x_d, y_d)$ as:
+
+\[
+x_d = x \cdot \big( 1 + k_1 r^2 + k_2 r^4 + k_3 r^6 + \dots \big)
+\]
+\[
+y_d = y \cdot \big( 1 + k_1 r^2 + k_2 r^4 + k_3 r^6 + \dots \big)
+\]
+
+where:
+\begin{itemize}
+    \item $(x, y)$ are normalized image coordinates (centered at the principal point),
+    \item $r^2 = x^2 + y^2$ is the squared radial distance from the optical axis,
+    \item $k_1, k_2, k_3, \dots$ are the radial distortion coefficients.
+\end{itemize}
+
+The sign and magnitude of the coefficients determine whether the lens exhibits 
+\emph{barrel distortion} or \emph{pincushion distortion}.
+
+\subsubsection*{2. Barrel Distortion}
+
+\begin{itemize}
+    \item \textbf{Definition:} Straight lines appear to bulge outwards, like the sides of a barrel.
+    \item \textbf{Mathematical explanation:} Occurs when $k_1 < 0$ (dominant case). 
+    The scaling factor
+    \[
+    1 + k_1 r^2 + k_2 r^4 + \dots
+    \]
+    becomes \emph{smaller} as $r$ increases. 
+    Thus, points farther from the image center are mapped closer inward, 
+    compressing the edges and making straight lines look convex.
+\end{itemize}
+
+Typical example: wide-angle or fisheye lenses.
+
+\subsubsection*{3. Pincushion Distortion}
+
+\begin{itemize}
+    \item \textbf{Definition:} Straight lines appear to bend inward, like the edges of a pincushion.
+    \item \textbf{Mathematical explanation:} Occurs when $k_1 > 0$ (dominant case).
+    The scaling factor
+    \[
+    1 + k_1 r^2 + k_2 r^4 + \dots
+    \]
+    grows with $r$. 
+    Thus, points farther from the image center are pushed outward, stretching the edges
+    and making straight lines bow inward.
+\end{itemize}
+
+Typical example: telephoto lenses.
+
+\subsubsection*{4. Visual Summary}
+
+\begin{itemize}
+    \item If the radial factor decreases with $r$: \textbf{Barrel distortion} ($k_1 < 0$).
+    \item If the radial factor increases with $r$: \textbf{Pincushion distortion} ($k_1 > 0$).
+\end{itemize}
+\subsection{}
+\subsection{}
+\subsection{}
+
 
 \end{document}
 % how to display codes?
