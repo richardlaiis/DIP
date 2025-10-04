@@ -4,7 +4,7 @@ try:
     scale = float(input())
 except:
     print('Invalid Input: Number is expected')
-filename = 'middle_finger.jpg'
+filename = 'me.jpg'
 
 img = cv.imread(filename)
 height, width = img.shape[0], img.shape[1]

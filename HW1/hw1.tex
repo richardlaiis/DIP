@@ -44,10 +44,73 @@
 \maketitle
 
 \section{Exercise 1 - Scaling}
-\subsection{}
-\subsection{}
-\subsection{}
+\subsection{Code}
+This part is corresponding to the subproblem 1 in exercise 1. I use \texttt{opencv} module and the \texttt{resize()} function in it, the function covers common methods of interpolations (e.g. \texttt{cv2.INTER\_LINEAR} for bilinear interpolation, \texttt{cv2.INTER\_CUBIC} for bicubic interpolation). Just fill the scaled width and height (unit: pixels) of the image in the function, we can get our result.
+
+How to run this code (\texttt{scale.py})? Just run \texttt{python3 scale.py} (And ensure the modules opencv-python and numpy are installed using methods like \texttt{pip install opencv-python, numpy}, \texttt{sudo apt-get install python3-opencv}) and enter the scaling factor the result will be saved in the current working directory with scaling factor as prefix.
+
+\begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,linenos,breaklines]{python}
+import cv2 as cv
+import numpy as np
+try:
+    scale = float(input())
+except:
+    print('Invalid Input: Number is expected')
+filename = 'me.jpg'
+
+img = cv.imread(filename)
+height, width = img.shape[0], img.shape[1]
+
+height = int(scale * height)
+width = int(scale * width)
+
+result = cv.resize(img, (width, height), interpolation = cv.INTER_CUBIC)
+# or INTER_LINEAR
+cv.imwrite(f'{scale}_{filename}', result)
+\end{minted}
+\subsection{Demo}
+This part is corresponding to the subprolem 2 in exercise 1.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{images/013_me_linear.jpg}
+    \caption{Bilinear interpolation with scaling factor of 0.13 (images/013\_me\_linear.jpg)}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{images/013_me_cubic.jpg}
+    \caption{Bilinear interpolation with scaling factor of 0.13 (images/013\_me\_cubic.jpg)}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{images/9c.png}
+    \caption{Bicubic interpolation with scaling factor of 9 (images/9\_me\_cubic.png)}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{images/9l.png}
+    \caption{Bilinear interpolation with scaling factor of 9 (images/9\_me\_linear.png)}
+\end{figure}
+\subsection{Comparison}
+When enlarging or resampling an image, bilinear interpolation estimates the value of each new pixel by taking a weighted average of the four closest pixels in the original image. This method is computationally efficient and produces smoother results than the simplest method (nearest-neighbor). However, because it only considers a small neighborhood, \textbf{bilinear interpolation tends to blur edges and lose fine details}, \textbf{making the image appear soft or slightly out of focus when scaled up significantly.}
+
+On the other hand, bicubic interpolation uses a larger neighborhood of 16 surrounding pixels and fits cubic polynomials to estimate pixel values. This allows it to preserve edges and textures more effectively, \textbf{producing sharper and more visually pleasing images compared to bilinear interpolation}, this propery is especially evident when we shrink the image. The trade-off is that bicubic interpolation requires more computation and can sometimes introduce minor artifacts like halo effects near strong edges.
+
+In general, bilinear interpolation is preferred when speed is more important than quality, such as in real-time applications, while bicubic interpolation is favored when higher-quality image scaling is required, such as in photo editing or printing. Thus, bicubic usually gives superior results, but at the cost of additional processing time.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\linewidth]{images/c1.png}
+    \caption{The comparison of details when scaling factor is 0.13}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\linewidth]{images/c2.png}
+    \caption{The comparison of details when scaling factor is 9}
+\end{figure}
+
+
 \subsection{Bicubic Interpolation}
+This part is corresponding to the subprolem 4 in exercise 1.
 
 Bicubic interpolation estimates a value at a 2D grid point using a $4\times4$ neighborhood (16 points) for smoother results. It extends 1D cubic splines separably: 
 
@@ -91,6 +154,7 @@ The comparison between the complexity of two methods can be summarized as follow
 \newpage
 \section{Exercise 2 - Distortion}
 \subsection{}
+This part is corresponding to the subprolem 1 in exercise 2.
 \subsubsection*{1. Brown--Conrady Model of Radial Distortion}
 
 The Brown--Conrady model expresses the relation between the ideal (undistorted) image point 
@@ -151,9 +215,89 @@ Typical example: telephoto lenses.
     \item If the radial factor decreases with $r$: \textbf{Barrel distortion} ($k_1 < 0$).
     \item If the radial factor increases with $r$: \textbf{Pincushion distortion} ($k_1 > 0$).
 \end{itemize}
-\subsection{}
-\subsection{}
-\subsection{}
+\subsection{Code}
+This part is corresponding to the subprolem 2 in exercise 2. 
+
+I use \texttt{cv2.remap()} to achieve the lens distortion. We can express the remap for every pixel location $(x,y)$
+as:
+$$g(x,y)=f(h(x,y))$$
+where $g(x,y)$ is the remapped image, the source image $f()$ and $h(x,y)$ is the mapping function that operates on $(x,y)$. The remapping function is referenced from the last section. Since we want the pixels in original image "move", i.e., the pixels in new position should have the same value of original position, we need to negate $k_1$ before sending $k_1$ to our distortion function.
+
+The rest of details of my implementation are all in the comments of my code. (as follows)
+
+How to run this code (\texttt{distort.py})? Just run \texttt{python3 distort.py} (And ensure the modules opencv-python, numpy and matplotlib are installed using methods like \texttt{pip install opencv-python, numpy, matplotlib}, \texttt{sudo apt-get install python3-opencv}) and change the value of variable \texttt{x} in this code, after running it, we can see three images shown, they are original images, barrel distorted image ($k_1=-x$), pincushion distorted image ($k_1=x$)
+
+\begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,linenos,breaklines]{python}
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+def apply_radial_distortion(img, k1=0.0, k2=0.0, k3=0.0):
+    k1 = -k1
+    k2 = -k2
+    h, w = img.shape[:2]
+    cx, cy = w / 2.0, h / 2.0  # principal point = image center
+    fx = fy = w                # focal length (heuristic choice)
+
+    # Build meshgrid of pixel coordinates
+    x = np.linspace(0, w-1, w)
+    y = np.linspace(0, h-1, h)
+    xx, yy = np.meshgrid(x, y)
+
+    # Normalize to camera coordinates
+    x_norm = (xx - cx) / fx
+    y_norm = (yy - cy) / fy
+    r2 = x_norm**2 + y_norm**2
+
+    # Apply radial distortion model
+    factor = 1 + k1*r2 + k2*r2**2 + k3*r2**3
+    x_distorted = x_norm * factor
+    y_distorted = y_norm * factor
+
+    # Convert back to pixel coordinates
+    u = x_distorted * fx + cx
+    v = y_distorted * fy + cy
+
+    # Build remap maps (must be float32 for cv2.remap)
+    map_x = u.astype(np.float32)
+    map_y = v.astype(np.float32)
+
+    # Warp the image
+    distorted = cv2.remap(img, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+    return distorted
+
+
+# Load image
+img = cv2.imread("me.jpg")   # Replace with your image
+img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+x = 0.5
+
+# Apply barrel (k1 < 0) and pincushion (k1 > 0)
+barrel = apply_radial_distortion(img, k1=-x)
+pincushion = apply_radial_distortion(img, k1=x)
+
+# Show results
+plt.figure(figsize=(12,6))
+plt.subplot(1,3,1), plt.imshow(img), plt.title("Original")
+plt.subplot(1,3,2), plt.imshow(barrel), plt.title(f"Barrel (k1={-x})")
+plt.subplot(1,3,3), plt.imshow(pincushion), plt.title(f"Pincushion (k1={x})")
+plt.show()
+\end{minted}
+\subsection{Demo}
+This part is corresponding to the subproblem 3 and 4 in exercise 2. The images (Figure\_[1,2,3].png) are put under the \texttt{images} folder.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{images/Figure_3.png}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{images/Figure_1.png}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{images/Figure_2.png}
+\end{figure}
 
 
 \end{document}
