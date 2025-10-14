@@ -33,13 +33,11 @@ grey_img = cv.cvtColor(grey_img, cv.COLOR_GRAY2RGB)
 plt.subplot(2, 2, 3)
 plt.imshow(grey_img)
 plt.axis('off')
-plt.title('Original Greyscale Image')
 
 equalized_img = cv.cvtColor(equalized_img, cv.COLOR_GRAY2RGB)
 plt.subplot(2, 2, 4)
 plt.imshow(equalized_img)
 plt.axis('off')
-plt.title('Histogram Equalized Image')
 
 plt.tight_layout()
 plt.show()
