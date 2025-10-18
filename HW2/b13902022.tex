@@ -53,7 +53,9 @@
 python3 HistEqualization.py [*.png or *.jpg]
 \end{Verbatim}
 
-One example is \texttt{python3 HistEqualization.py monica.png}, note that the program takes one \textbf{png} or \textbf{jpg} file as the only argument
+One example is \texttt{python3 HistEqualization.py monica.png}, note that the program takes one existing \textbf{png} or \textbf{jpg} file as the only argument
+
+Also, in my program, I use modules like \texttt{opencv, matplotlib, numpy, sys}, so please make sure these modules are installed before running.
 \begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,linenos,breaklines]{python}
 import cv2 as cv
 import numpy as np
@@ -100,7 +102,22 @@ plt.tight_layout()
 plt.show()
 \end{minted}
 \subsection{Explanation}
+Line 1 to line 14 import necessary modules, handle the exception and take one file name as the argument for future processing.
+
+From line 16 to line 18, the program reads the image, and converts the values of the image in BGR color space (a tuple of 3 values, each from 0 to 255) to greyscale space (0 to 255). And then use \texttt{cv2.equalizeHist} to do histogram equalization on this greyscale image.
+
+The rest of the code is about plotting the results of images and histogram of intensity before and after processing in several subplots. The most important part is \texttt{plt.hist(equalized\_img.ravel(),256,[0,256])}, since it flatten the 2-d array of images to 1-d array and put the data into function for making histograms, also, for the proper display of image in matplotlib, we need to convert the pixel data in greyscale space to RGB color space.
 \subsection{Demo}
+We can clearly find that the histogram-equalized image is brighter (compared to original photo taken in the dark place) and has higher contrast. Also, the distribution of intensity of each pixel is more even, in other words, much flatter, this is what we want from histogram equalization. The picture below is \texttt{demo.png}, it can be displayed again by running command below:
+\begin{Verbatim}[linenos]
+python3 HistEqualization.py selfie.jpg
+\end{Verbatim}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{demo.png}
+    \caption{The histograms and results of my selfie before and after 
+histogram equalization}
+\end{figure}
 
 
 \end{document}
